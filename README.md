@@ -29,3 +29,8 @@
 [版本与校验文件](https://github.com/ZhaoOyu/fengdu/releases/tag/v0.1.8) · [反馈机型或使用问题](https://github.com/ZhaoOyu/fengdu/issues)
 
 应用默认跟随系统语言。在面板底部打开「语言」，可随时选择「简体中文」或「English」。
+
+## 更多菜单栏工具
+
+- [明度](https://github.com/ZhaoOyu/mingdu) · 分别调节内置屏幕和外接显示器的亮度，也可以用夜间、日常、明亮三档预设一次调好所有屏幕。
+- [Codex 余量](https://github.com/ZhaoOyu/codex-quota-bar) · 在 Mac 菜单栏或 Ubuntu 顶栏查看五小时和每周的 Codex 剩余额度，以及距离下次重置还有多久。

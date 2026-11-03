@@ -27,3 +27,8 @@ Fanless Macs have no fan speed to adjust. If another utility is controlling the 
 [Release notes](https://github.com/ZhaoOyu/fengdu/releases/tag/v0.1.8) · [Report an issue](https://github.com/ZhaoOyu/fengdu/issues)
 
 The interface follows your system language by default. Open **Language** at the bottom of the panel to switch to **简体中文** or **English**.
+
+## More menu bar apps
+
+- [Mingdu](https://github.com/ZhaoOyu/mingdu/blob/main/README.en.md) · Adjust the brightness of your built-in and external displays separately, or apply a night, everyday, or bright preset to all of them at once.
+- [Codex Quota Bar](https://github.com/ZhaoOyu/codex-quota-bar/blob/main/README.en.md) · Track your five-hour and weekly Codex quotas in the Mac menu bar or Ubuntu top panel, and see how long until each resets.
