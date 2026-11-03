@@ -9,13 +9,15 @@ func statusIcon(_ state: Snapshot, stale: Bool) -> NSImage {
     let fraction = targetFraction(state,stale:stale)
     for (alpha, sweep) in [(0.25,296.0),(1.0,(fraction ?? 0)*296)] where sweep > 0 {
         NSColor.black.withAlphaComponent(alpha).setStroke()
-        let path = NSBezierPath(); path.lineWidth = 2.4; path.lineCapStyle = .round
+        let path = NSBezierPath(); path.lineWidth = indicatorStroke; path.lineCapStyle = .round
         path.appendArc(withCenter: NSPoint(x: 13,y: 12),radius: 10.7,startAngle: 238,endAngle: 238-sweep,clockwise: true); path.stroke()
     }
-    icon("fanblades.fill")?.draw(in:NSRect(x:6.5,y:5.5,width:13,height:13))
+    drawFan(center: NSPoint(x: 13, y: 12))
     image.unlockFocus(); image.isTemplate = true; return image
 }
 final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+    let loginItem = LoginItem(identifier: "io.github.fengdu.FanControl")
+    var loginButton = NSButton()
     let demo: Bool
     let worker = DispatchQueue(label:"io.github.fengdu.io")
     let popover = NSPopover()
@@ -95,8 +97,15 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         view.maximumNumberOfLines = h > 24 ? 3 : 1; view.lineBreakMode = h > 24 ? .byWordWrapping : .byTruncatingTail
         content.addSubview(view); return view
     }
-    func glyph(_ name:String,_ x:CGFloat,_ y:CGFloat,_ size:CGFloat = 22) {
-        let v = NSImageView(frame:NSRect(x:x,y:y,width:size,height:size)); v.image = icon(name); v.contentTintColor = .secondaryLabelColor; content.addSubview(v)
+    func glyph(_ name: String, title: NSTextField, color: NSColor) {
+        let size: CGFloat = 22
+        let bounds = title.cell?.drawingRect(forBounds: title.bounds) ?? title.bounds
+        let height = min(bounds.height, title.intrinsicContentSize.height)
+        let centerY = title.frame.minY + bounds.minY + height / 2
+        let view = NSImageView(frame: NSRect(x: 20, y: round(centerY - size / 2), width: size, height: size))
+        view.image = icon(name)?.withSymbolConfiguration(.init(pointSize: 15, weight: .semibold))
+        view.contentTintColor = color
+        content.addSubview(view)
     }
     func divider(_ y:CGFloat) { let v = NSBox(frame:NSRect(x:18,y:y,width:324,height:1)); v.boxType = .separator; content.addSubview(v) }
     @discardableResult func button(_ text:String,_ action:Selector,_ x:CGFloat,_ y:CGFloat,_ w:CGFloat) -> NSButton {
@@ -105,23 +114,22 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
     func build() {
         rowIDs = snapshot.fans.map(\.id)
-        let rowHeight = CGFloat(max(1,rowIDs.count))*92, height = 430+rowHeight
+        let rowHeight = CGFloat(max(1,rowIDs.count))*92, height = 466+rowHeight
         material = NSVisualEffectView(frame:NSRect(x:0,y:0,width:360,height:min(height,700)))
         material.material = .popover; material.blendingMode = .behindWindow; material.state = .active
         let scroll = NSScrollView(frame:material.bounds); scroll.drawsBackground = false; scroll.hasVerticalScroller = height > 700; scroll.autohidesScrollers = true
         content = FlippedView(frame:NSRect(x:0,y:0,width:360,height:height)); scroll.documentView = content; material.addSubview(scroll)
-        glyph("fanblades",20,18); label(demo ? "风度 · 演示" : "风度",54,17,200,17,true)
+        glyph("fanblades", title: label(demo ? "风度 · 演示" : "风度",54,17,200,17,true), color: .systemTeal)
         let v = label("v\(appVersion)",275,21,65,11,false,true); v.alignment = .right
         divider(54)
-        glyph("thermometer.medium",20,71)
-        label("芯片温度",54,68,180,13,true)
+        glyph("thermometer.medium", title: label("芯片温度",54,68,180,13,true), color: .systemOrange)
         tempLabel = label("—",243,67,97,19,true); tempLabel.alignment = .right
         detailLabel = label("SMC 温度读数",54,94,286,10,false,true)
         divider(120)
         rows.removeAll(); inputs.removeAll()
         for (index, fan) in snapshot.fans.enumerated() {
             let y = 135 + CGFloat(index)*92
-            glyph("fanblades",20,y+1); label(fan.name,54,y,160,14,true)
+            glyph("fanblades", title: label(fan.name,54,y,160,14,true), color: .systemBlue)
             let rpm = label("— RPM",209,y,131,16,true); rpm.alignment = .right
             let details = label("",54,y+27,286,10,false,true)
             let input = NSTextField(frame:NSRect(x:268,y:y+46,width:72,height:24))
@@ -169,7 +177,18 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         button("刷新",#selector(refreshClick),18,y+262,96)
         systemButton = button("恢复系统",#selector(restore),122,y+262,112)
         button("退出",#selector(quit),242,y+262,100)
+        loginButton = NSButton(checkboxWithTitle: "登录系统时启动", target: self, action: #selector(changeLogin))
+        loginButton.frame = NSRect(x: 20, y: y+302, width: 230, height: 22)
+        loginButton.state = loginItem.enabled ? .on : .off
+        loginButton.isEnabled = !demo
+        content.addSubview(loginButton)
         popover.contentViewController?.view = material; popover.contentSize = material.frame.size
+    }
+    @objc func changeLogin() {
+        guard !demo else { return }
+        do { try loginItem.setEnabled(loginButton.state == .on) }
+        catch { fail(error) }
+        loginButton.state = loginItem.enabled ? .on : .off
     }
     @objc func changeStyle(_ sender:NSSegmentedControl) {
         style = sender.selectedSegment == 1 ? .track : .ring
@@ -210,7 +229,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             status.button?.imagePosition = !fanVisible ? .noImage : (speedVisible || demo ? .imageLeading : .imageOnly)
         }
         status.button?.setAccessibilityLabel("风度 · " + display)
-        status.button?.font = .monospacedDigitSystemFont(ofSize:12,weight:.semibold)
+        status.button?.font = indicatorFont
         status.button?.toolTip = "风度：首个风扇的目标转速；AUTO 表示自动调节"
         tempLabel.stringValue = stale ? "—" : snapshot.temperature.map { String(format:"%.0f°C",$0) } ?? "—"
         detailLabel.stringValue = "SMC 最高读数" + (snapshot.sensor.map { " · \($0)" } ?? " · 暂不可用")

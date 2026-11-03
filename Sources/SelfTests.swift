@@ -66,6 +66,19 @@ func selfTests() throws {
     h.failRestore = false; engine.tick()
     try check(engine.owned.isEmpty, "restoration retries succeed")
     try rejected { _ = try engine.command(Command(action:"arbitrary-smc-write")) }
+    // Use an isolated directory so tests can never change the real login item.
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let item = LoginItem(identifier: "io.github.fengdu.test", directory: directory)
+    try item.setEnabled(true)
+    let data = try Data(contentsOf: item.url)
+    let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+    guard item.enabled, plist?["RunAtLoad"] as? Bool == true,
+          plist?["ProgramArguments"] as? [String] == [Bundle.main.executableURL!.path, "--background"] else {
+        throw FanError("Invalid quiet login item")
+    }
+    try item.setEnabled(false)
+    guard !item.enabled else { throw FanError("Could not remove login item") }
     print("PASS: \(count) safety/encoding checks; all hardware simulated")
 }
 
