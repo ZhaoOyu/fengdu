@@ -2,7 +2,7 @@
 
 风扇响起来时，点开 Mac 菜单栏就能看到芯片温度和实际转速。想固定转速就输入 RPM，希望随温度变化就设一条曲线，用完点「恢复系统」。
 
-**[下载风度 0.1.7](https://github.com/ZhaoOyu/fengdu/releases/download/v0.1.7/Fengdu-0.1.7-macos-arm64.dmg)** · 适用于 macOS 14 及以上、有内置风扇的 Apple Silicon Mac
+**[下载风度 0.1.8](https://github.com/ZhaoOyu/fengdu/releases/download/v0.1.8/Fengdu-0.1.8-macos-arm64.dmg)** · 适用于 macOS 14 及以上、有内置风扇的 Apple Silicon Mac · [English](README.en.md)
 
 <img src="docs/menubar-017.png" width="340" alt="圆环旁显示 AUTO，跑道内显示风扇图标和目标转速 3000 RPM">
 
@@ -26,4 +26,6 @@
 
 无风扇的 MacBook Air 无法调速。若面板提示「外部手动控制」，先在原来的风扇工具中恢复自动，再回到风度点击「刷新」。
 
-[版本与校验文件](https://github.com/ZhaoOyu/fengdu/releases/tag/v0.1.7) · [反馈机型或使用问题](https://github.com/ZhaoOyu/fengdu/issues)
+[版本与校验文件](https://github.com/ZhaoOyu/fengdu/releases/tag/v0.1.8) · [反馈机型或使用问题](https://github.com/ZhaoOyu/fengdu/issues)
+
+应用默认跟随系统语言。在面板底部打开「语言」，可随时选择「简体中文」或「English」。

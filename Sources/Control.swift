@@ -1,6 +1,6 @@
 import Foundation
 
-let appVersion = "0.1.7"
+let appVersion = "0.1.8"
 struct Fan: Codable, Equatable {
     let id: Int
     let name: String

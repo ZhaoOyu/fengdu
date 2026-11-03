@@ -98,6 +98,18 @@ func uiSelfTests() throws {
     guard panel.status.button!.title.hasSuffix("AUTO") else { throw FanError("Missing system AUTO") }
     panel.buttons["manual"]!.performClick(nil); try wait()
     guard panel.snapshot.mode == "manual" else { throw FanError("One-click manual failed") }
+    let picker = NSPopUpButton()
+    picker.addItems(withTitles: AppLanguage.names)
+    picker.selectItem(at: 2)
+    panel.changeLanguage(picker)
+    guard panel.buttons["manual"]?.title == "Manual RPM", panel.snapshot.mode == "manual" else {
+        throw FanError("English display changed fan mode")
+    }
+    picker.selectItem(at: 1)
+    panel.changeLanguage(picker)
+    guard panel.buttons["manual"]?.title == "手动转速" else { throw FanError("Chinese label not restored") }
+    picker.selectItem(at: 0)
+    panel.changeLanguage(picker)
     let input = panel.inputs[0]!
     input.stringValue = "3400"; _ = input.sendAction(input.action,to:input.target); try wait()
     guard panel.snapshot.fans[0].target == 3400, panel.snapshot.fans[1].target == 2600 else { throw FanError("Numeric RPM failed") }

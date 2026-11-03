@@ -25,7 +25,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var hardware: FanHardware?
     var demoEngine: ControlEngine?
     var sessionDirectory: String?
-    var snapshot = Snapshot(message:"正在读取真实风扇与温度…")
+    var snapshot = Snapshot(message:tr("正在读取真实风扇与温度…"))
     var stale = false, busy = false, closed = false
     var selection: String { snapshot.mode }
     var refreshing = false, revision = 0
@@ -63,7 +63,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let suggested = snapshot.temperature.map { $0.rounded() + 20 }
         let autoValue = selection == "curve" && preferredHigh == nil ? appliedHigh : suggested
         let title = autoValue.map { "\(Int($0))°C" } ?? "—"
-        highField.item(at:0)?.title = "默认：" + title
+        highField.item(at:0)?.title = tr("默认：") + title
         if let custom = preferredHigh { highField.selectItem(withTitle:"\(Int(custom))°C") }
         else { highField.selectItem(at:0) }
     }
@@ -114,75 +114,87 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
     func build() {
         rowIDs = snapshot.fans.map(\.id)
-        let rowHeight = CGFloat(max(1,rowIDs.count))*92, height = 466+rowHeight
+        let rowHeight = CGFloat(max(1,rowIDs.count))*92, height = 504+rowHeight
         material = NSVisualEffectView(frame:NSRect(x:0,y:0,width:360,height:min(height,700)))
         material.material = .popover; material.blendingMode = .behindWindow; material.state = .active
         let scroll = NSScrollView(frame:material.bounds); scroll.drawsBackground = false; scroll.hasVerticalScroller = height > 700; scroll.autohidesScrollers = true
         content = FlippedView(frame:NSRect(x:0,y:0,width:360,height:height)); scroll.documentView = content; material.addSubview(scroll)
-        glyph("fanblades", title: label(demo ? "风度 · 演示" : "风度",54,17,200,17,true), color: .systemTeal)
+        glyph("fanblades", title: label(demo ? tr("风度 · 演示") : tr("风度"),54,17,200,17,true), color: .systemTeal)
         let v = label("v\(appVersion)",275,21,65,11,false,true); v.alignment = .right
         divider(54)
-        glyph("thermometer.medium", title: label("芯片温度",54,68,180,13,true), color: .systemOrange)
+        glyph("thermometer.medium", title: label(tr("芯片温度"),54,68,180,13,true), color: .systemOrange)
         tempLabel = label("—",243,67,97,19,true); tempLabel.alignment = .right
-        detailLabel = label("SMC 温度读数",54,94,286,10,false,true)
+        detailLabel = label(tr("SMC 温度读数"),54,94,286,10,false,true)
         divider(120)
         rows.removeAll(); inputs.removeAll()
         for (index, fan) in snapshot.fans.enumerated() {
             let y = 135 + CGFloat(index)*92
-            glyph("fanblades", title: label(fan.name,54,y,160,14,true), color: .systemBlue)
+            glyph("fanblades", title: label(tr(fan.name),54,y,160,14,true), color: .systemBlue)
             let rpm = label("— RPM",209,y,131,16,true); rpm.alignment = .right
             let details = label("",54,y+27,286,10,false,true)
             let input = NSTextField(frame:NSRect(x:268,y:y+46,width:72,height:24))
             input.tag = fan.id; input.alignment = .right; input.font = .monospacedDigitSystemFont(ofSize:12,weight:.regular)
             input.target = self; input.action = #selector(enterRPM(_:)); input.cell?.sendsActionOnEndEditing = false
-            input.setAccessibilityLabel(fan.name+"目标 RPM，输入后按回车"); input.toolTip = "输入目标 RPM，按回车生效"
+            input.setAccessibilityLabel(tr(fan.name)+tr("目标 RPM，输入后按回车")); input.toolTip = tr("输入目标 RPM，按回车生效")
             inputs[fan.id] = input; content.addSubview(input)
             let slider = NSSlider(value:fan.rpm ?? fan.safeMinimum,minValue:fan.safeMinimum,maxValue:max(fan.safeMinimum+1,fan.maximum ?? 6000),target:self,action:#selector(slide(_:)))
             slider.frame = NSRect(x:54,y:y+48,width:286,height:22); slider.tag = fan.id; slider.isContinuous = false
-            slider.setAccessibilityLabel(fan.name+"目标转速")
+            slider.setAccessibilityLabel(tr(fan.name)+tr("目标转速"))
             content.addSubview(slider); rows[fan.id] = (slider,rpm,details); divider(y+79)
         }
-        if snapshot.fans.isEmpty { label("未发现可用风扇",54,143,286,14,true); label("无风扇 Mac 或不受支持的机型无法调节。",54,174,286,11,false,true,36) }
+        if snapshot.fans.isEmpty { label(tr("未发现可用风扇"),54,143,286,14,true); label(tr("无风扇 Mac 或不受支持的机型无法调节。"),54,174,286,11,false,true,36) }
         let y = 120+rowHeight
-        label("调节模式",20,y+14,100,12,true)
+        label(tr("调节模式"),20,y+14,100,12,true)
         modeLabel = label("",125,y+14,215,11,false,true); modeLabel.alignment = .right
         buttons.removeAll()
-        for (i,pair) in [("system","系统自动"),("manual","手动转速"),("curve","温度曲线")].enumerated() {
+        for (i,pair) in [("system",tr("系统自动")),("manual",tr("手动转速")),("curve",tr("温度曲线"))].enumerated() {
             let b = button(pair.1,#selector(selectMode(_:)),18+CGFloat(i)*109,y+41,106); b.identifier = NSUserInterfaceItemIdentifier(pair.0); b.setButtonType(.pushOnPushOff); buttons[pair.0] = b
         }
-        label("起调温度",20,y+83,64,11,false,true)
+        label(tr("起调温度"),20,y+83,64,11,false,true)
         lowField = NSPopUpButton(frame:NSRect(x:82,y:y+76,width:83,height:28),pullsDown:false)
         lowField.addItems(withTitles:[35,40,45,50,55,60,65].map { "\($0)°C" }); lowField.selectItem(withTitle:"\(Int(low))°C"); lowField.target = self; lowField.action = #selector(curveChanged); content.addSubview(lowField)
-        label("满速温度",170,y+83,60,11,false,true)
+        label(tr("满速温度"),170,y+83,60,11,false,true)
         highField = NSPopUpButton(frame:NSRect(x:229,y:y+76,width:111,height:28),pullsDown:false)
-        highField.addItem(withTitle:"默认：—"); highField.addItems(withTitles:[65,70,75,80,85].map { "\($0)°C" }); highField.target = self; highField.action = #selector(curveChanged); content.addSubview(highField)
+        highField.addItem(withTitle:tr("默认：—")); highField.addItems(withTitles:[65,70,75,80,85].map { "\($0)°C" }); highField.target = self; highField.action = #selector(curveChanged); content.addSubview(highField)
         messageLabel = label("",20,y+115,320,11,false,true,38)
         divider(y+157)
-        label("菜单栏样式",20,y+170,110,12,true)
-        stylePicker = NSSegmentedControl(labels:["圆环","跑道"],trackingMode:.selectOne,target:self,action:#selector(changeStyle(_:)))
+        label(tr("菜单栏样式"),20,y+170,110,12,true)
+        stylePicker = NSSegmentedControl(labels:[tr("圆环"),tr("跑道")],trackingMode:.selectOne,target:self,action:#selector(changeStyle(_:)))
         stylePicker.frame = NSRect(x:172,y:y+164,width:168,height:27)
-        stylePicker.setAccessibilityLabel("菜单栏样式"); stylePicker.selectedSegment = style == .track ? 1 : 0
+        stylePicker.setAccessibilityLabel(tr("菜单栏样式")); stylePicker.selectedSegment = style == .track ? 1 : 0
         content.addSubview(stylePicker)
-        label("显示内容",20,y+208,100,12,true)
+        label(tr("显示内容"),20,y+208,148,12,true)
         previewButtons = [button("",#selector(togglePart(_:)),172,y+201,52),
                           button("",#selector(togglePart(_:)),225,y+201,115)]
         for (idx,b) in previewButtons.enumerated() {
             b.tag = 1 << idx; b.setButtonType(.pushOnPushOff)
             b.isBordered = false; b.wantsLayer = true; b.layer?.cornerRadius = 6
-            b.setAccessibilityLabel(idx == 0 ? "显示风扇图标" : "显示目标转速")
-            b.toolTip = "点选要显示的区域，至少保留一项"
+            b.setAccessibilityLabel(idx == 0 ? tr("显示风扇图标") : tr("显示目标转速"))
+            b.toolTip = tr("点选要显示的区域，至少保留一项")
         }
         previewButtons[0].image = icon("fanblades.fill")
         divider(y+247)
-        button("刷新",#selector(refreshClick),18,y+262,96)
-        systemButton = button("恢复系统",#selector(restore),122,y+262,112)
-        button("退出",#selector(quit),242,y+262,100)
-        loginButton = NSButton(checkboxWithTitle: "登录系统时启动", target: self, action: #selector(changeLogin))
+        button(tr("刷新"),#selector(refreshClick),18,y+262,96)
+        systemButton = button(tr("恢复系统"),#selector(restore),122,y+262,112)
+        button(tr("退出"),#selector(quit),242,y+262,100)
+        loginButton = NSButton(checkboxWithTitle: tr("登录系统时启动"), target: self, action: #selector(changeLogin))
         loginButton.frame = NSRect(x: 20, y: y+302, width: 230, height: 22)
         loginButton.state = loginItem.enabled ? .on : .off
         loginButton.isEnabled = !demo
         content.addSubview(loginButton)
+        label(AppLanguage.english ? "Language" : "语言", 20, y+340, 120, 12, true)
+        let language = NSPopUpButton(frame: NSRect(x: 172, y: y+334, width: 168, height: 28), pullsDown: false)
+        language.addItems(withTitles: AppLanguage.names)
+        language.selectItem(at: AppLanguage.choices.firstIndex(of: AppLanguage.choice) ?? 0)
+        language.target = self
+        language.action = #selector(changeLanguage(_:))
+        content.addSubview(language)
         popover.contentViewController?.view = material; popover.contentSize = material.frame.size
+    }
+    @objc func changeLanguage(_ sender: NSPopUpButton) {
+        AppLanguage.choice = AppLanguage.choices[sender.indexOfSelectedItem]
+        build()
+        update()
     }
     @objc func changeLogin() {
         guard !demo else { return }
@@ -210,7 +222,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         else if selection == "curve" || (selection == "system" && snapshot.fans.allSatisfy({ [0,3].contains($0.mode ?? -1) })) { reading = "AUTO" }
         else if ["manual","external"].contains(selection), let rpm = snapshot.fans.first?.target { reading = "\(Int(rpm.rounded())) RPM" }
         else { reading = "—" }
-        let display = (demo ? "演示 " : "") + reading
+        let display = (demo ? tr("演示 ") : "") + reading
         let fanVisible = visibleParts & 1 != 0, speedVisible = visibleParts & 2 != 0
         for b in previewButtons {
             let selected = visibleParts & b.tag != 0
@@ -220,21 +232,21 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             if b.tag == 2 { b.title = reading }
         }
         if style == .track {
-            status.button?.title = !speedVisible && demo ? " 演示" : ""
+            status.button?.title = !speedVisible && demo ? tr(" 演示") : ""
             status.button?.image = trackIcon(reading:display,fraction:targetFraction(snapshot,stale:stale),showFan:fanVisible,showSpeed:speedVisible)
             status.button?.imagePosition = !speedVisible && demo ? .imageLeading : .imageOnly
         } else {
             status.button?.image = fanVisible ? statusIcon(snapshot,stale:stale) : nil
-            status.button?.title = speedVisible ? (fanVisible ? " · " : "") + display : (demo ? " 演示" : "")
+            status.button?.title = speedVisible ? (fanVisible ? " · " : "") + display : (demo ? tr(" 演示") : "")
             status.button?.imagePosition = !fanVisible ? .noImage : (speedVisible || demo ? .imageLeading : .imageOnly)
         }
-        status.button?.setAccessibilityLabel("风度 · " + display)
+        status.button?.setAccessibilityLabel(tr("风度 · ") + display)
         status.button?.font = indicatorFont
-        status.button?.toolTip = "风度：首个风扇的目标转速；AUTO 表示自动调节"
+        status.button?.toolTip = tr("风度：首个风扇的目标转速；AUTO 表示自动调节")
         tempLabel.stringValue = stale ? "—" : snapshot.temperature.map { String(format:"%.0f°C",$0) } ?? "—"
-        detailLabel.stringValue = "SMC 最高读数" + (snapshot.sensor.map { " · \($0)" } ?? " · 暂不可用")
-        let modes = ["system":"当前：系统自动","manual":"当前：手动转速","curve":"当前：温度曲线","external":"当前：外部手动控制","recovering":"正在恢复系统控制"]
-        modeLabel.stringValue = modes[snapshot.mode] ?? "读取中"
+        detailLabel.stringValue = tr("SMC 最高读数") + (snapshot.sensor.map { " · " + tr($0) } ?? tr(" · 暂不可用"))
+        let modes = ["system":tr("当前：系统自动"),"manual":tr("当前：手动转速"),"curve":tr("当前：温度曲线"),"external":tr("当前：外部手动控制"),"recovering":tr("正在恢复系统控制")]
+        modeLabel.stringValue = modes[snapshot.mode] ?? tr("读取中")
         for fan in snapshot.fans {
             guard let (slider,value,details) = rows[fan.id] else { continue }
             let target = fan.target ?? fan.safeMinimum
@@ -245,8 +257,8 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 input.isHidden = !manual; input.isEnabled = slider.isEnabled
                 if input.currentEditor() == nil { input.stringValue = fan.target.map { String(Int($0.rounded())) } ?? "" }
             }
-            value.stringValue = stale ? "读数过期" : fan.rpm.map { "\(Int($0.rounded())) RPM" } ?? "— RPM"
-            details.stringValue = "范围 \(Int(fan.safeMinimum))–\(Int(fan.maximum ?? 0)) RPM" + (manual ? " · 输入后按回车" : "")
+            value.stringValue = stale ? tr("读数过期") : fan.rpm.map { "\(Int($0.rounded())) RPM" } ?? "— RPM"
+            details.stringValue = tr("范围 \(Int(fan.safeMinimum))–\(Int(fan.maximum ?? 0)) RPM") + (manual ? tr(" · 输入后按回车") : "")
         }
         for (key,b) in buttons {
             b.state = selection == key ? .on : .off; b.isEnabled = canSelect(key)
@@ -258,7 +270,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         lowField.isEnabled = selection == "curve" && !busy; highField.isEnabled = selection == "curve" && !busy
         syncThresholds()
         systemButton.isEnabled = !busy && (snapshot.controlled || sessionDirectory != nil || demo)
-        messageLabel.stringValue = (demo ? "模拟设备 · " : "") + (busy ? "正在处理，请稍候…" : snapshot.message)
+        messageLabel.stringValue = (demo ? tr("模拟设备 · ") : "") + (busy ? tr("正在处理，请稍候…") : tr(snapshot.message))
         messageLabel.textColor = snapshot.error ? .systemOrange : .secondaryLabelColor
     }
     func receive(_ state:Snapshot) {
@@ -398,7 +410,7 @@ final class FanApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
     func render(to directory:String, live:Bool = false) throws {
         preview = true; NSApp.setActivationPolicy(.accessory); NSApp.activate(ignoringOtherApps:true)
-        snapshot = try live ? MacHardware().snapshot() : DemoHardware().snapshot(); if !live { snapshot.mode = "manual"; snapshot.controlled = true; snapshot.message = "手动调速 · 输入目标后按回车" }
+        snapshot = try live ? MacHardware().snapshot() : DemoHardware().snapshot(); if !live { snapshot.mode = "manual"; snapshot.controlled = true; snapshot.message = tr("手动调速 · 输入目标后按回车") }
         popover.contentViewController = NSViewController(); build(); update()
         for (name,appearance) in [("light",NSAppearance.Name.aqua),("dark",NSAppearance.Name.darkAqua)] {
             material.appearance = NSAppearance(named:appearance)
