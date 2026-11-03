@@ -4,6 +4,10 @@
 
 **[下载风度 0.1.7](https://github.com/ZhaoOyu/fengdu/releases/download/v0.1.7/Fengdu-0.1.7-macos-arm64.dmg)** · 适用于 macOS 14 及以上、有内置风扇的 Apple Silicon Mac
 
+<img src="docs/menubar-017.png" width="340" alt="圆环旁显示 AUTO，跑道内显示风扇图标和目标转速 3000 RPM">
+
+自动调节时显示 AUTO。手动模式显示目标转速，图中跑道亮了一半，表示目标为风扇最高转速的一半。
+
 <img src="docs/fengdu-panel-017.png" width="360" alt="风度的 Mac 面板，显示芯片温度、逐个风扇的实际转速、手动 RPM 输入框和调节模式">
 
 ## 三种调节方式
