@@ -1,0 +1,51 @@
+name: 构建与发布风度
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: 检查发布版本与架构
+        run: |
+          test "$(uname -m)" = arm64
+          if [[ "$GITHUB_REF_TYPE" = tag ]]; then
+            test "$GITHUB_REF_NAME" = "v$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' packaging/Info.plist)"
+            test -s "docs/releases/$GITHUB_REF_NAME.md"
+          fi
+      - run: bash tools/build.sh
+      - name: 模拟风扇、原生面板和控制连接测试
+        run: |
+          dist/Fengdu.app/Contents/MacOS/Fengdu --self-test
+          dist/Fengdu.app/Contents/MacOS/Fengdu --ui-test
+          python3 Tests/test_ipc.py
+      - run: bash tools/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fengdu-arm64
+          path: build/release/
+          if-no-files-found: error
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fengdu-arm64
+          path: release
+      - name: 发布已校验的安装包
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          gh release create "$GITHUB_REF_NAME" release/*.dmg release/SHA256SUMS.txt --verify-tag --title "风度 ${GITHUB_REF_NAME#v} · Mac 菜单栏风扇调节" --notes-file "docs/releases/$GITHUB_REF_NAME.md"
